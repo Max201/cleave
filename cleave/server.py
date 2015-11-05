@@ -6,6 +6,9 @@ import datetime
 
 
 class Log(object):
+    DEBUG = True
+
+    # Console colors output
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
     OKGREEN = '\033[92m'
@@ -17,11 +20,16 @@ class Log(object):
 
     @staticmethod
     def message(msg):
-        print datetime.datetime.now().strftime('[%Y-%m-%d %H:%M] ') + str(msg)
+        print datetime.datetime.now().strftime('[%Y-%m-%d %H:%M:%S] ') + str(msg)
 
     @staticmethod
     def debug(msg):
-        Log.message('[DEBUG]    ' + str(msg))
+        if Log.DEBUG is True:
+            Log.message('[DEBUG]    ' + str(msg))
+
+    @staticmethod
+    def info(msg):
+        Log.message('[INFO]     ' + Log.OKBLUE + str(msg) + Log.ENDC)
 
     @staticmethod
     def warning(msg):
@@ -35,6 +43,14 @@ class Log(object):
     def critical(msg):
         Log.message('[CRITICAL] ' + Log.FAIL + Log.BOLD + str(msg) + Log.ENDC)
 
+    @staticmethod
+    def disable():
+        Log.DEBUG = False
+
+    @staticmethod
+    def enable():
+        Log.DEBUG = True
+
 
 class BaseClient(object):
     def __init__(self, conn, addr, msg):
@@ -42,6 +58,10 @@ class BaseClient(object):
         self.addr = addr
         self.message = msg
         self.buffer = []
+
+    def flush(self):
+        self.sock.send(''.join(self.buffer))
+        self.close()
 
     def send(self, msg):
         self.buffer.append(msg)
@@ -51,16 +71,22 @@ class BaseClient(object):
 
 
 class BaseServer(object):
+    DUMP_REQUEST = False
+    DUMP_RESPONSE = False
+    RESTART_ON_ERROR = True
+    DEFAULT_TIMEOUT = None
+    AUTOFLUSH_RESPONSE = True
+    CLIENT_OBJECT = BaseClient
+
     """
     Server class
     """
-    def __init__(self, host='127.0.0.1', port=8008, clients=10, client_object=BaseClient):
-        self.client_object = client_object
+    def __init__(self, host='127.0.0.1', port=8008, clients=10):
+        socket.setdefaulttimeout(float(self.DEFAULT_TIMEOUT) if self.DEFAULT_TIMEOUT is not None else None)
         self.clients = clients
         self.addr = (host, port)
         self.conn = None
-
-        self._loop()
+        self.startup_handler()
 
     def client_handler(self, client):
         """
@@ -70,19 +96,29 @@ class BaseServer(object):
         """
         pass
 
+    def client_error_handler(self, exception=None):
+        """
+        Calls when excepts client error
+        :param exception: Exception
+        :return:
+        """
+        pass
+
     def startup_handler(self):
         """
         Calls when server is starting
         :return:
         """
         self._connection(socket.AF_INET, socket.SOCK_STREAM)
+        self._loop()
 
-    def shutdown_handler(self):
+    def shutdown_handler(self, exception=None):
         """
         Call before server will shutting down
         :return:
         """
-        pass
+        if self.RESTART_ON_ERROR and exception is not None:
+            self.startup_handler()
 
     def _connection(self, *args, **kwargs):
         """
@@ -105,52 +141,82 @@ class BaseServer(object):
             Log.critical(e)
             sys.exit()
 
+    def _shutdown(self, exception=None):
+        """
+        Shutdown current loop
+        :return:
+        """
+        self.conn.close()
+        self.shutdown_handler(exception)
+
     def _loop(self):
         """
         Main loop
         :return:
         """
-        self.startup_handler()
-
         if self.conn is None:
             Log.critical('Server is not initialized')
             sys.exit()
 
-        Log.warning('Server listen {}:{}'.format(self.addr[0], self.addr[1]))
+        Log.info('Server listen {}:{}'.format(self.addr[0], self.addr[1]))
         Log.debug('Waiting maximum {} clients'.format(self.clients))
 
         try:
+            # Wait for a new clients
             while True:
-                conn, addr = self.conn.accept()
                 # New client accepted
-                Log.debug('New client connected {}:{}'.format(addr[0], addr[1]))
+                conn, addr = self.conn.accept()
+                Log.info('New client connected {}:{}'.format(addr[0], addr[1]))
+
+                # Read message
                 message = self._read(conn)
 
+                # Dump request
+                if self.DUMP_REQUEST:
+                    Log.info('Request received:\n{}\n'.format(message))
+
                 # Handle client
-                client = self.client_object(conn, addr, message)
-                self.client_handler(client)
+                client = self.CLIENT_OBJECT(conn, addr, message)
+                try:
+                    self.client_handler(client)
+                except Exception as e:
+                    Log.warning('Client error: {}'.format(e.message))
+                    self.client_error_handler(e)
 
-                # Send response
-                conn.send(''.join(client.buffer))
-                conn.close()
+                    # Dump response
+                    if self.DUMP_RESPONSE:
+                        Log.info('Response will send:\n{}\n'.format(''.join(client.buffer)))
+
+                    if self.AUTOFLUSH_RESPONSE is True:
+                        client.flush()
+                    continue
+
+                # Dump response
+                if self.DUMP_RESPONSE:
+                    Log.info('Response will send:\n{}\n'.format(''.join(client.buffer)))
+
+                # Flush response
+                if self.AUTOFLUSH_RESPONSE is True:
+                    client.flush()
+
         except KeyboardInterrupt:
-            print '\b\b\b\b\b'
+            # Shutting down server
             self._shutdown()
-            Log.warning('Server is down!')
-            sys.exit()
-        except Exception as e:
-            Log.warning(e)
-            self._shutdown()
-            Log.warning('Server is down!')
+            Log.info('Server is down!')
             sys.exit()
 
-    def _shutdown(self):
-        """
-        Shutdown current loop
-        :return:
-        """
-        self.shutdown_handler()
-        self.conn.close()
+        except Exception as e:
+            # Shutting down server
+            Log.error(e)
+
+            # Exit or restart
+            if self.RESTART_ON_ERROR is False:
+                Log.warning('Server is down!')
+                sys.exit()
+            else:
+                Log.info('Server is now restarting')
+
+            self._shutdown(e)
 
     @staticmethod
     def _read(sock, chunk_len=2048):
