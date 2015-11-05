@@ -7,7 +7,7 @@ setup(
     author = 'Maxim Papezhuk',
     author_email = 'maxp.job@gmail.com',
     url = 'https://github.com/Max201/cleave',
-    download_url = 'https://github.com/peterldowns/mypackage/tarball/0.1', # I'll explain this in a second
-    keywords = ['testing', 'logging', 'example'], # arbitrary keywords
+    download_url = 'https://github.com/Max201/cleave/tarball/v0.1',
+    keywords = ['python', 'server', 'simple'],
     classifiers = [],
 )
