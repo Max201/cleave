@@ -4,6 +4,7 @@ import sys
 import socket
 import datetime
 
+
 class Log(object):
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -40,9 +41,10 @@ class BaseClient(object):
         self.sock = conn
         self.addr = addr
         self.message = msg
+        self.buffer = []
 
     def send(self, msg):
-        self.sock.send(msg)
+        self.buffer.append(msg)
 
     def close(self):
         self.sock.close()
@@ -52,17 +54,11 @@ class BaseServer(object):
     """
     Server class
     """
-    def __init__(self, host='127.0.0.1', port=8008, clients=10):
-        self.addr = (host, port)
+    def __init__(self, host='127.0.0.1', port=8008, clients=10, client_object=BaseClient):
+        self.client_object = client_object
         self.clients = clients
-
-        try:
-            self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.conn.bind(self.addr)
-            self.conn.listen(self.clients)
-        except socket.error as e:
-            Log.critical(e)
-            sys.exit()
+        self.addr = (host, port)
+        self.conn = None
 
         self._loop()
 
@@ -76,10 +72,10 @@ class BaseServer(object):
 
     def startup_handler(self):
         """
-        Calls when server is running
+        Calls when server is starting
         :return:
         """
-        pass
+        self._connection(socket.AF_INET, socket.SOCK_STREAM)
 
     def shutdown_handler(self):
         """
@@ -88,29 +84,62 @@ class BaseServer(object):
         """
         pass
 
+    def _connection(self, *args, **kwargs):
+        """
+        Creation socket
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        try:
+            # Create socket
+            self.conn = socket.socket(*args, **kwargs)
+            self.conn.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+            # Bind address
+            self.conn.bind(self.addr)
+
+            # Listen clients
+            self.conn.listen(self.clients)
+        except socket.error as e:
+            Log.critical(e)
+            sys.exit()
+
     def _loop(self):
         """
         Main loop
         :return:
         """
+        self.startup_handler()
+
+        if self.conn is None:
+            Log.critical('Server is not initialized')
+            sys.exit()
+
         Log.warning('Server listen {}:{}'.format(self.addr[0], self.addr[1]))
         Log.debug('Waiting maximum {} clients'.format(self.clients))
-        self.startup_handler()
 
         try:
             while True:
                 conn, addr = self.conn.accept()
+                # New client accepted
+                Log.debug('New client connected {}:{}'.format(addr[0], addr[1]))
                 message = self._read(conn)
-                client = BaseClient(conn, addr, message)
+
+                # Handle client
+                client = self.client_object(conn, addr, message)
                 self.client_handler(client)
-                client.close()
-        except Exception as e:
-            Log.warning(e)
+
+                # Send response
+                conn.send(''.join(client.buffer))
+                conn.close()
+        except KeyboardInterrupt:
+            print '\b\b\b\b\b'
             self._shutdown()
             Log.warning('Server is down!')
             sys.exit()
-        except KeyboardInterrupt:
-            print '\b\b\b\b\b'
+        except Exception as e:
+            Log.warning(e)
             self._shutdown()
             Log.warning('Server is down!')
             sys.exit()
@@ -124,10 +153,18 @@ class BaseServer(object):
         self.conn.close()
 
     @staticmethod
-    def _read(sock, pair=1024):
-        resp = tmp = sock.recv(pair)
-        while len(tmp) < pair:
-            tmp = sock.recv(pair)
-            resp += tmp
-
-        return resp
+    def _read(sock, chunk_len=2048):
+        """
+        Read all chunks from socket connection
+        :param sock:
+        :param chunk_len:
+        :return:
+        """
+        result = sock.recv(chunk_len)
+        if len(result) == chunk_len:
+            while True:
+                tmp = sock.recv(chunk_len)
+                result += tmp
+                if len(tmp) < chunk_len:
+                    break
+        return result
