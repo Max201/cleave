@@ -234,3 +234,5 @@ class BaseServer(object):
                 if len(tmp) < chunk_len:
                     break
         return result
+
+__all__ = ['BaseClient', 'BaseServer']
