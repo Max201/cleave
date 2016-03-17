@@ -2,54 +2,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import socket
-import datetime
-
-
-class Log(object):
-    DEBUG = True
-
-    # Console colors output
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-
-    @staticmethod
-    def message(msg):
-        print datetime.datetime.now().strftime('[%Y-%m-%d %H:%M:%S] ') + str(msg)
-
-    @staticmethod
-    def debug(msg):
-        if Log.DEBUG is True:
-            Log.message('[DEBUG]    ' + str(msg))
-
-    @staticmethod
-    def info(msg):
-        Log.message('[INFO]     ' + Log.OKBLUE + str(msg) + Log.ENDC)
-
-    @staticmethod
-    def warning(msg):
-        Log.message('[WARNING]  ' + Log.WARNING + str(msg) + Log.ENDC)
-
-    @staticmethod
-    def error(msg):
-        Log.message('[ERROR]    ' + Log.FAIL + str(msg) + Log.ENDC)
-
-    @staticmethod
-    def critical(msg):
-        Log.message('[CRITICAL] ' + Log.FAIL + Log.BOLD + str(msg) + Log.ENDC)
-
-    @staticmethod
-    def disable():
-        Log.DEBUG = False
-
-    @staticmethod
-    def enable():
-        Log.DEBUG = True
+from cleave.debug import Log
 
 
 class BaseClient(object):
@@ -77,6 +30,7 @@ class BaseServer(object):
     DEFAULT_TIMEOUT = None
     AUTOFLUSH_RESPONSE = True
     CLIENT_OBJECT = BaseClient
+    LOG_CLIENTS = True
 
     """
     Server class
@@ -166,13 +120,14 @@ class BaseServer(object):
             while True:
                 # New client accepted
                 conn, addr = self.conn.accept()
-                Log.info('New client connected {}:{}'.format(addr[0], addr[1]))
+                if self.LOG_CLIENTS:
+                    Log.info('New client connected {}:{}'.format(addr[0], addr[1]))
 
                 # Read message
                 message = self._read(conn)
 
                 # Dump request
-                if self.DUMP_REQUEST:
+                if self.DUMP_REQUEST and self.LOG_CLIENTS:
                     Log.info('Request received:\n{}\n'.format(message))
 
                 # Handle client
@@ -234,5 +189,6 @@ class BaseServer(object):
                 if len(tmp) < chunk_len:
                     break
         return result
+
 
 __all__ = ['BaseClient', 'BaseServer']

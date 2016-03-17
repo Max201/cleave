@@ -22,3 +22,10 @@ How to use
 **then in console**
 
 	python test.py
+	
+
+Serve Tool
+----------
+Serve tool allows you to run simplest HttpServer File in one command. [dirname] will be used as base directory.
+
+    $ serve [dirname]
