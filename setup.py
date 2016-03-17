@@ -2,13 +2,13 @@ from setuptools import setup, find_packages
 setup(
     name='cleave',
     packages=find_packages(),
-    version='0.2',
-    description='Python easy tools library',
+    version='0.21',
+    description='Python easy tools library. Allows to run local http server in one command.',
     author='Maxim Papezhuk',
     author_email='maxp.job@gmail.com',
     url='https://github.com/Max201/cleave',
-    download_url='https://github.com/Max201/cleave/tarball/v0.2',
-    keywords=['server', 'python', 'socket', 'easy', 'encryption'],
+    download_url='https://github.com/Max201/cleave/tarball/v0.21',
+    keywords=['server', 'python', 'socket', 'easy', 'encryption', 'http server', 'file server'],
     classifiers=[],
     entry_points={
         'console_scripts': [
