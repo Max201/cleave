@@ -33,10 +33,11 @@ How to use
 
 Serve Tool
 ----------
-Serve tool allows you to run simplest HttpServer File in one command. *[dirname]* will be used as base directory. 
+Serve tool allows you to run simplest **Http File Server** in one command. *[dirname]* will be used as base directory. 
 
     $ serve [dirname]
-    # Will serve your [dirname] cli directory on http://127.0.0.1:8008
+    # Will serve your [dirname] directory on http://127.0.0.1:8008
+    # And all files will be accessible by http://127.0.0.1:8008/[filename]
     
 
 You can setup directory index file by setting up *[filename]*, in this case *[dirname]* will be a *[filename] directory*.
