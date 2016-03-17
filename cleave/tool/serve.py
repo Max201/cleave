@@ -11,6 +11,7 @@ from cleave.debug import Log
 
 class FileStorage(HandleRequest):
     BASE_DIR = None
+    BASE_FILE = None
 
     @staticmethod
     def get_file_path(request_uri):
@@ -70,6 +71,9 @@ class FileStorage(HandleRequest):
 
     @staticmethod
     def serve_file(client, request):
+        if request.uri == '/':
+            request.uri = FileStorage.BASE_FILE
+
         filepath = FileStorage.get_file_path(request.uri)
 
         # File not found
@@ -96,9 +100,11 @@ class FileStorage(HandleRequest):
 
 def serve(args=None):
     arguments = args or argv
-    path = os.path.dirname(os.path.abspath(arguments[0]))
+    path = os.getcwd()
     if len(arguments) > 1 and os.path.exists(os.path.abspath(arguments[1])):
         path = os.path.abspath(arguments[1])
+        if not os.path.isdir(os.path.abspath(arguments[1])):
+            FileStorage.BASE_FILE = os.path.basename(arguments[1])
 
     # Setup filestorage
     Log.info('Selected folder: {}'.format(path))
