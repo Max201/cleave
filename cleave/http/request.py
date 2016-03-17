@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from urllib import url2pathname
 from urlparse import urlparse, parse_qs
 
 
@@ -31,6 +32,12 @@ class Request(object):
         request_cookie = {}
         request_body = ''
 
+        # Decode request
+        try:
+            raw_request = raw_request.encode('utf-8', 'ignore')
+        except:
+            pass
+
         # Parse headers
         request_lines = raw_request.split("\n")
         line_stop = 0
@@ -44,7 +51,7 @@ class Request(object):
             if ':' not in line:
                 data = line.split(' ')
                 request_method = data[0].strip().upper()
-                request_uri = data[1].strip()
+                request_uri = url2pathname(data[1].strip())
                 request_path = urlparse(request_uri).path
                 continue
 

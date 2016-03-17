@@ -110,7 +110,7 @@ class FileStorage(HandleRequest):
 
         content += '<tbody>'
         for file in dir_items['items']:
-            link = uri.strip('/') + '/' + file['name']
+            link = uri.rstrip('/') + '/' + file['name']
             icon = '<span class="glyphicon glyphicon-file"></span> ' if not file['dir'] else '<span class="glyphicon glyphicon-folder-close"></span> '
             content += '<tr><td>{} <a href="{}">{}</a></td><td><b>{}</b></td><td>{}</td></tr>'.format(
                 icon, link, file['name'], FileStorage.format_size(file['size']), FileStorage.get_file_type(file['name'])
