@@ -105,9 +105,12 @@ def serve(args=None):
         path = os.path.abspath(arguments[1])
         if not os.path.isdir(os.path.abspath(arguments[1])):
             FileStorage.BASE_FILE = os.path.basename(arguments[1])
+            path = os.path.dirname(os.path.abspath(arguments[1]))
+
+    Log.info('Selected folder: {}'.format(path))
+    Log.info('Served on http://127.0.0.1:8008/')
 
     # Setup filestorage
-    Log.info('Selected folder: {}'.format(path))
     FileStorage.BASE_DIR = path
     FileStorage.set_request_callback('serve_file')
 
