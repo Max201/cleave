@@ -56,7 +56,7 @@ class FileStorage(HandleRequest):
             if item == '.' or item == '..':
                 continue
 
-            abspath = folder.rstrip('/') + '/' + item
+            abspath = folder.rstrip('/') + os.path.sep + item
             if os.path.isdir(abspath):
                 dirs.append({
                     'name': item,
@@ -159,14 +159,31 @@ class FileStorage(HandleRequest):
 def serve(args=None):
     arguments = args or argv
     path = os.getcwd()
+    srv_conf = {
+        'host': '127.0.0.1',
+        'port': '8008'
+    }
+
     if len(arguments) > 1 and os.path.exists(os.path.abspath(arguments[1])):
         path = os.path.abspath(arguments[1])
         if not os.path.isdir(os.path.abspath(arguments[1])):
             FileStorage.BASE_FILE = os.path.basename(arguments[1])
             path = os.path.dirname(os.path.abspath(arguments[1]))
 
+    if len(arguments) > 2:
+        srv_data = arguments[2].strip().split(':')
+        srv_host = srv_data[0] or srv_conf['host']
+        srv_port = srv_conf['port']
+        if len(srv_data) > 1:
+            srv_port = srv_data[1]
+        if srv_host == '0':
+            srv_host = srv_conf['host']
+
+        srv_conf['host'] = srv_host
+        srv_conf['port'] = srv_port
+
     Log.debug('Selected folder: {}'.format(path))
-    Log.debug('Website available on http://127.0.0.1:8008/')
+    Log.debug('Should be available on http://{}:{}/'.format(srv_conf['host'], srv_conf['port']))
 
     # Setup filestorage
     FileStorage.BASE_DIR = path
@@ -174,4 +191,8 @@ def serve(args=None):
 
     # Setup Http server
     HttpServer.set_request_handler(FileStorage)
-    HttpServer(port=8008, clients=99)
+    HttpServer(
+        host=srv_conf['host'],
+        port=int(srv_conf['port']),
+        clients=99
+    )
