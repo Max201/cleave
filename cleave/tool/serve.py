@@ -71,7 +71,7 @@ class FileStorage(HandleRequest):
 
     @staticmethod
     def serve_file(client, request):
-        if request.uri == '/':
+        if request.uri == '/' and FileStorage.BASE_FILE is not None:
             request.uri = FileStorage.BASE_FILE
 
         filepath = FileStorage.get_file_path(request.uri)
