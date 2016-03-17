@@ -72,7 +72,7 @@ class FileStorage(HandleRequest):
     @staticmethod
     def serve_file(client, request):
         if request.uri == '/' and FileStorage.BASE_FILE is not None:
-            request.uri = FileStorage.BASE_FILE
+            request.uri = '/' + str(FileStorage.BASE_FILE)
 
         filepath = FileStorage.get_file_path(request.uri)
 
@@ -89,7 +89,7 @@ class FileStorage(HandleRequest):
         # Serve directory
         if os.path.isdir(filepath):
             response.set_content(FileStorage.serve_directory(filepath, request.uri))
-            response.headers['Content-Type'] = 'text/html'
+            response.headers['Content-Type'] = 'text/html; charset=utf-8'
         else:
             response.set_content(file(filepath, 'rb').read())
 
