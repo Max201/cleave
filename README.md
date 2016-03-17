@@ -65,7 +65,7 @@ Run your file from command line:
 	python test.py
 	
 
-### Encryption: Quick start guide
+### Encryption API: Quick start guide
 Encryption package allows you to encrypt / decrypt string in a simplest way:
 
 	# Import encryption library
@@ -79,11 +79,10 @@ Encryption package allows you to encrypt / decrypt string in a simplest way:
 	>>> Encrypt("cleave").md5.md5
 	u'e379bb20fd08ee4b403dbd3ad5b0f68a'
 
-You can following encryption algorithms:
+You can use following encryption algorithms:
 
 - md5
 - crc32
 - base16 / unbase16
 - base64 / unbase64
-- sha1
-- sha224 / sha256 / sha384 / sha512
+- sha1 / sha224 / sha256 / sha384 / sha512
