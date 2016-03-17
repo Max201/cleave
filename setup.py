@@ -12,7 +12,7 @@ setup(
     classifiers=[],
     entry_points={
         'console_scripts': [
-            'serve=cleave.tool.serve:serve',
+            'serve=cleave.tool:HttpFileServer',
         ],
     },
 )
